@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
@@ -25,9 +26,13 @@ func NewGame() *Game {
 func (g *Game) Update() error {
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		x, y := ebiten.CursorPosition()
-		if g.isChoiceSelected(x, y) {
+		choice := g.isChoiceSelected(x, y)
+		if choice != "" {
 			g.choiceSelected = true
-			g.message = "selected！"
+			g.message = fmt.Sprintf("%s selected！", choice)
+		} else {
+			g.choiceSelected = false
+			g.message = "Please select a choice"
 		}
 	}
 	return nil
@@ -40,11 +45,14 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	ebitenutil.DebugPrintAt(screen, "2. select B", 100, 230)
 }
 
-func (g *Game) isChoiceSelected(x, y int) bool {
+func (g *Game) isChoiceSelected(x, y int) string {
 	if x >= 100 && x <= 300 && y >= 200 && y <= 220 {
-		return true
+		return "A"
 	}
-	return false
+	if x >= 100 && x <= 300 && y >= 230 && y <= 250 {
+		return "B"
+	}
+	return ""
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
