@@ -1,9 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"image/color"
+	"log"
+	"time"
 )
 
 const (
@@ -11,48 +13,58 @@ const (
 	screenHeight = 480
 )
 
+var (
+	scenario = []string{
+		"Here is a my house.",
+		"I don't know what to do...",
+		"next day...",
+	}
+)
+
 type Game struct {
-	choiceSelected bool
-	message        string
+	currentMessageIndex int
+	displayText         string
+	currentCharIndex    int
+	lastClickTime       time.Time
 }
 
 func NewGame() *Game {
 	return &Game{
-		choiceSelected: false,
-		message:        "Please select a choice",
+		currentMessageIndex: 0,
+		displayText:         "",
+		currentCharIndex:    0,
+		lastClickTime:       time.Now(),
 	}
 }
 
 func (g *Game) Update() error {
-	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-		x, y := ebiten.CursorPosition()
-		choice := g.isChoiceSelected(x, y)
-		if choice != "" {
-			g.choiceSelected = true
-			g.message = fmt.Sprintf("%s selected！", choice)
-		} else {
-			g.choiceSelected = false
-			g.message = "Please select a choice"
+	if g.currentMessageIndex <= len(scenario) {
+		if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+			if time.Since(g.lastClickTime) > 200*time.Millisecond {
+				g.lastClickTime = time.Now()
+				if g.currentCharIndex >= len(scenario[g.currentMessageIndex]) {
+					g.currentMessageIndex++
+					g.displayText = ""
+					g.currentCharIndex = 0
+				}
+			}
+		}
+		if g.currentCharIndex < len(scenario[g.currentMessageIndex]) {
+			g.displayText += string(scenario[g.currentMessageIndex][g.currentCharIndex])
+			g.currentCharIndex++
 		}
 	}
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	ebitenutil.DebugPrint(screen, g.message)
+	screen.Fill(color.Black)
 
-	ebitenutil.DebugPrintAt(screen, "1. select A", 100, 200)
-	ebitenutil.DebugPrintAt(screen, "2. select B", 100, 230)
-}
+	ebitenutil.DebugPrintAt(screen, g.displayText, 50, 100)
 
-func (g *Game) isChoiceSelected(x, y int) string {
-	if x >= 100 && x <= 300 && y >= 200 && y <= 220 {
-		return "A"
+	if g.currentMessageIndex >= len(scenario) {
+		ebitenutil.DebugPrintAt(screen, "All messages had been displayed", 50, 200)
 	}
-	if x >= 100 && x <= 300 && y >= 230 && y <= 250 {
-		return "B"
-	}
-	return ""
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -61,9 +73,8 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 
 func main() {
 	ebiten.SetWindowSize(screenWidth, screenHeight)
-	ebiten.SetWindowTitle("Simple game")
-	game := NewGame()
-	if err := ebiten.RunGame(game); err != nil {
-		panic(err)
+	ebiten.SetWindowTitle("Nobel Game")
+	if err := ebiten.RunGame(NewGame()); err != nil {
+		log.Fatal(err)
 	}
 }
